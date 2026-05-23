@@ -318,10 +318,19 @@ function speakThree(v){
   const row=VERBS.find(r=>r[0]===v); if(!row) return;
   try{
     speechSynthesis.cancel();
-    const u=new SpeechSynthesisUtterance(row[0]+", "+row[1]+", "+row[2]);
-    u.lang="en-US"; u.rate=0.85; u.pitch=1.05;
-    const vo=getVoice(); if(vo){ u.voice=vo; u.lang=vo.lang; }
-    speechSynthesis.speak(u);
+    const vo=getVoice();
+    // 三態各自不同音高與輕重，模擬中文二聲(高)–三聲(低)–四聲(慢而重沉)的韻律
+    const parts=[
+      {t:row[0], pitch:1.4,  rate:0.95, vol:1.0},  // 原形：上揚
+      {t:row[1], pitch:0.8,  rate:0.92, vol:0.9},  // 過去式：壓低
+      {t:row[2], pitch:1.1,  rate:0.72, vol:1.0}   // 過去分詞：放慢加重
+    ];
+    parts.forEach(p=>{
+      const u=new SpeechSynthesisUtterance(p.t);
+      u.lang="en-US"; if(vo){ u.voice=vo; u.lang=vo.lang; }
+      u.pitch=p.pitch; u.rate=p.rate; u.volume=p.vol;
+      speechSynthesis.speak(u);
+    });
   }catch(e){}
 }
 
