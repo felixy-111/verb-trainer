@@ -118,6 +118,42 @@
     font-size:13px; padding:9px 14px; border:1px solid #C9D6E6; background:#fff;
     border-radius:9px; cursor:pointer; color:#46586b;
   }
+
+  /* ===== 複習 hub 入口 ===== */
+  .hub{display:flex; gap:10px; margin:0 0 14px;}
+  .hubbtn{flex:1; background:#fff; border:2px solid #D5E0EE; border-radius:14px; padding:13px 8px;
+    cursor:pointer; display:flex; flex-direction:column; gap:3px; align-items:center;}
+  .hubbtn:active{transform:scale(.97);}
+  .hubbtn b{font-size:15px; color:var(--navy);}
+  .hubbtn span{font-size:11px; color:#8499AE;}
+
+  /* ===== 分頁 ===== */
+  .tabs{display:flex; gap:8px; margin-bottom:14px;}
+  .tab{flex:1; padding:11px; border:2px solid #D5E0EE; background:#fff; border-radius:10px;
+    font-size:14px; font-weight:600; color:#5a6b7d; cursor:pointer;}
+  .tab.on{background:var(--navy); color:#fff; border-color:var(--navy);}
+
+  /* ===== 單字表 ===== */
+  .wlsec{margin-bottom:16px;}
+  .wlhead{font-size:14px; font-weight:700; color:var(--navy); background:#EEF4FC;
+    padding:8px 12px; border-radius:8px; margin-bottom:6px; display:flex; justify-content:space-between;}
+  .wlhead small{color:#8499AE; font-weight:500; font-size:12px;}
+  .wltable{background:#fff; border-radius:10px; overflow:hidden; box-shadow:0 1px 4px rgba(31,58,95,.08);}
+  .wlrow{display:flex; align-items:center; gap:5px; padding:9px 10px; border-bottom:1px solid #F0F4F9; cursor:pointer;}
+  .wlrow:last-child{border-bottom:none;}
+  .wlrow:active{background:#F4F8FD;}
+  .wlrow.locked{cursor:default;}
+  .wlbase{flex:0 0 24%; font-weight:700; color:var(--navy); font-size:15px;}
+  .wlrow.locked .wlbase{color:#90a0b0;}
+  .wlform{flex:1; color:#46586b; font-size:14px;}
+  .wlrow.locked .wlform{color:#C5D0DC;}
+  .wlcn{flex:0 0 15%; font-size:12px; color:#8499AE; text-align:right; white-space:nowrap;}
+  .wllv{flex:0 0 32px; font-size:10px; color:var(--blue); text-align:right; font-weight:600;}
+  .wllock{padding:11px 12px; font-size:12px; color:#9fb2c8; background:#fff; border-radius:10px;}
+  .seetable{margin-top:18px; width:100%; padding:11px; border:1px dashed #B7C4D6; background:#F8FBFF;
+    color:var(--blue); border-radius:10px; font-size:14px; font-weight:600; cursor:pointer;}
+  .regtable{margin-top:10px;}
+
   footer{text-align:center; font-size:11px; color:#9fb2c8; padding:14px;}
 </style>
 </head>
@@ -213,14 +249,25 @@ const REGION_NAMES = ["入門","起步","熟悉","進階","挑戰","強化","精
 const KEY="verbTrainer_v2";
 const MASTER_STREAK=2;
 let DB = loadDB();
-function loadDB(){ try{const d=JSON.parse(localStorage.getItem(KEY)); if(d&&d.ver===2&&d.verbs) return d;}catch(e){} return {ver:2, verbs:{}}; }
+function loadDB(){ try{const d=JSON.parse(localStorage.getItem(KEY)); if(d&&d.ver===2&&d.verbs){ if(!d.review) d.review={}; return d; }}catch(e){} return {ver:2, verbs:{}, review:{}}; }
 function saveDB(){ localStorage.setItem(KEY, JSON.stringify(DB)); }
 function vs(v){ if(!DB.verbs[v]) DB.verbs[v]={c:0,w:0,s:0,m:false}; return DB.verbs[v]; }
+function rs(v){ if(!DB.review[v]) DB.review[v]={c:0,w:0,s:0}; return DB.review[v]; }  // 綜合複習：獨立紀錄
 
 function regionMastered(ri){ return REGION_LIST[ri].filter(r=>vs(r[0]).m).length; }
 function regionDone(ri){ return regionMastered(ri)===REGION_LIST[ri].length; }
 function regionUnlocked(ri){ return ri===0 || regionDone(ri-1); }
 function totalMastered(){ return VERBS.filter(r=>vs(r[0]).m).length; }
+
+/* 每字所屬區、複習題庫（已解鎖區的字） */
+const VERB_REGION={}; REGION_LIST.forEach((reg,i)=>reg.forEach(r=>VERB_REGION[r[0]]=i));
+function reviewPool(){ const out=[]; REGION_LIST.forEach((reg,i)=>{ if(regionUnlocked(i)) out.push(...reg); }); return out; }
+function pickReview(){
+  const pool=reviewPool(); if(!pool.length) return null;
+  const weighted=[];
+  pool.forEach(r=>{ const s=rs(r[0]); const w=1+s.w*2+(s.s===0?1:0); for(let k=0;k<w;k++) weighted.push(r); });
+  return weighted[Math.floor(Math.random()*weighted.length)];
+}
 
 /* ===== 音效（Web Audio 合成） ===== */
 let muted=false, actx=null;
@@ -311,7 +358,11 @@ function renderMap(){
   document.getElementById("hTitle").textContent="動詞三態闖關";
   document.getElementById("hSub").textContent=`精通 ${totalMastered()} / ${VERBS.length} 個動詞`;
   setTop();
-  let html=`<div class="maptitle">選一區開始 ‧ 整區精通才解鎖下一區</div><div class="regions">`;
+  let html=`<div class="hub">
+      <button class="hubbtn" id="wlBtn"><b>📖 單字表</b><span>對照背三態變化</span></button>
+      <button class="hubbtn" id="rvBtn"><b>🔁 綜合複習</b><span>混合測驗自我檢查</span></button>
+    </div>
+    <div class="maptitle">選一區開始 ‧ 整區精通才解鎖下一區</div><div class="regions">`;
   REGION_LIST.forEach((reg,i)=>{
     const m=regionMastered(i), n=reg.length, done=regionDone(i), unlocked=regionUnlocked(i);
     const cls=done?"done":(unlocked?"cur":"locked");
@@ -334,6 +385,8 @@ function renderMap(){
     if(!regionUnlocked(ri)){ sndWrong(); return; }
     sndClick(); enterRegion(ri);
   }));
+  document.getElementById("wlBtn").addEventListener("click",()=>{ sndClick(); enterWordlist(); });
+  document.getElementById("rvBtn").addEventListener("click",()=>{ sndClick(); enterReview(); });
   bindTools();
 }
 function ringSvg(m,n,done){
@@ -395,9 +448,15 @@ function renderQuiz(){
       <button class="submit" id="submitBtn" disabled>請先各選一個答案</button>
       <div class="result" id="result"></div>
     </div>
+    <button class="seetable" id="seeTableBtn">📖 看本區變化表</button>
+    <div class="wltable regtable" id="regTable" style="display:none">${REGION_LIST[curRegion].map(r=>wlRow(r,curRegion,true)).join("")}</div>
     ${famHtml()}`;
   app().querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>pickOpt(b)));
   document.getElementById("submitBtn").addEventListener("click",onSubmit);
+  const stb=document.getElementById("seeTableBtn");
+  stb.addEventListener("click",()=>{ sndClick(); const t=document.getElementById("regTable");
+    const show=t.style.display==="none"; t.style.display=show?"block":"none";
+    stb.textContent=show?"📖 收合變化表":"📖 看本區變化表"; if(show) bindWlRows(); });
   bindChips();
 }
 function pickOpt(btn){
@@ -445,7 +504,9 @@ function markGroup(grp, correct){
 }
 
 /* ===== 本區熟悉度色塊 ===== */
-function colorOf(v){ const s=vs(v); if(s.m) return "var(--green)"; if(s.c+s.w===0) return "var(--gray)"; if(s.s===0) return "var(--red)"; return "var(--amber)"; }
+function colorOfStat(s, green){ if(green) return "var(--green)"; if(s.c+s.w===0) return "var(--gray)"; if(s.s===0) return "var(--red)"; return "var(--amber)"; }
+function colorOf(v){ const s=vs(v); return colorOfStat(s, s.m); }
+function colorOfReview(v){ const s=rs(v); return colorOfStat(s, s.s>=2); }  // 複習：連對 2 次顯綠「記得牢」
 function famHtml(){
   return `<div class="famtitle">
       <span>本區單字（點字可聽發音）</span>
@@ -480,12 +541,145 @@ function renderClear(){
   document.getElementById("toMapBtn").addEventListener("click",()=>{ sndClick(); renderMap(); });
 }
 
+/* ===== 單字表（複習中心） ===== */
+const RULE_GROUPS=[
+  {t:"aaa", name:"三態不變", eg:"cut–cut–cut"},
+  {t:"abb", name:"過去式 = 過去分詞", eg:"buy–bought–bought"},
+  {t:"abc", name:"三態都不同", eg:"go–went–gone"},
+  {t:"aba", name:"原形 = 過去分詞", eg:"come–came–come"}
+];
+function wlRow(r,i,unlocked){
+  const lv=`<span class="wllv">LV${i+1}</span>`;
+  if(unlocked){
+    return `<div class="wlrow" data-v="${r[0]}">
+      <span class="wlbase">${r[0]}</span><span class="wlform">${r[1]}</span>
+      <span class="wlform">${r[2]}</span><span class="wlcn">${r[3]}</span>${lv}</div>`;
+  }
+  return `<div class="wlrow locked">
+      <span class="wlbase">${r[0]}</span><span class="wlform">🔒</span>
+      <span class="wlform">🔒</span><span class="wlcn">${r[3]}</span>${lv}</div>`;
+}
+function bindWlRows(){ app().querySelectorAll(".wlrow:not(.locked)").forEach(el=>el.addEventListener("click",()=>{ sndClick(); speakThree(el.dataset.v); })); }
+
+let wlTab="region";
+function enterWordlist(){
+  view="wordlist"; curRegion=null;
+  document.getElementById("backBtn").style.display="inline-block";
+  document.getElementById("hTitle").textContent="📖 單字表";
+  document.getElementById("hSub").textContent="已解鎖區可看完整三態，未解鎖顯示 🔒";
+  renderWordlist();
+}
+function renderWordlist(){
+  app().innerHTML=`<div class="tabs">
+      <button class="tab ${wlTab==='region'?'on':''}" data-tab="region">分區表</button>
+      <button class="tab ${wlTab==='rules'?'on':''}" data-tab="rules">規則總表</button>
+    </div><div>${wlTab==='region'?wlRegionHtml():wlRulesHtml()}</div>`;
+  app().querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{ wlTab=t.dataset.tab; sndClick(); renderWordlist(); }));
+  bindWlRows();
+}
+function wlRegionHtml(){
+  return REGION_LIST.map((reg,i)=>{
+    const unlocked=regionUnlocked(i);
+    const head=`<div class="wlhead"><span>LV ${i+1}・${REGION_NAMES[i]}</span>${unlocked?"":"<span>🔒</span>"}</div>`;
+    if(!unlocked) return `<div class="wlsec">${head}<div class="wllock">完成前一區即可解鎖查看</div></div>`;
+    return `<div class="wlsec">${head}<div class="wltable">${reg.map(r=>wlRow(r,i,true)).join("")}</div></div>`;
+  }).join("");
+}
+function wlRulesHtml(){
+  return RULE_GROUPS.map(g=>{
+    const list=VERBS.filter(r=>r[4]===g.t).sort((a,b)=>VERB_REGION[a[0]]-VERB_REGION[b[0]]);
+    const rows=list.map(r=>{ const i=VERB_REGION[r[0]]; return wlRow(r,i,regionUnlocked(i)); }).join("");
+    return `<div class="wlsec"><div class="wlhead"><span>${g.name}</span><small>${g.eg}</small></div><div class="wltable">${rows}</div></div>`;
+  }).join("");
+}
+
+/* ===== 綜合複習（獨立紀錄、無限刷） ===== */
+function enterReview(){
+  view="review"; curRegion=null;
+  document.getElementById("backBtn").style.display="inline-block";
+  document.getElementById("hTitle").textContent="🔁 綜合複習";
+  document.getElementById("hSub").textContent="已解鎖區混合測驗 ‧ 不影響闖關進度";
+  nextReview();
+}
+function reviewStats(){ const pool=reviewPool(); return {green:pool.filter(r=>rs(r[0]).s>=2).length, total:pool.length}; }
+function nextReview(){
+  curRow=pickReview();
+  if(!curRow){ app().innerHTML=`<div class="clear"><div class="big">📭</div><p>目前還沒有可複習的單字，先去闖關解鎖吧！</p><div class="toolbar"><button id="toMapBtn">回地圖</button></div></div>`;
+    document.getElementById("toMapBtn").addEventListener("click",()=>{ sndClick(); renderMap(); }); return; }
+  ptOpts=shuffle([curRow[1], ...generateDistractors(curRow,1)]);
+  ppOpts=shuffle([curRow[2], ...generateDistractors(curRow,2)]);
+  ptPick=null; ppPick=null; graded=false;
+  renderReview();
+}
+function renderReview(){
+  const st=reviewStats();
+  const optBtns=(opts,grp)=>opts.map(o=>`<button class="opt" data-grp="${grp}" data-v="${o}">${o}</button>`).join("");
+  app().innerHTML=`
+    <div class="rprog"><span>記得牢</span>
+      <div class="bar"><div style="width:${st.total?st.green/st.total*100:0}%"></div></div>
+      <span>${st.green}/${st.total}</span></div>
+    <div class="qcard">
+      <div class="base">${curRow[0]}</div>
+      <div class="basecn">（${curRow[3]}）</div>
+      <div class="hint">綜合複習 ‧ 過去式與過去分詞各是？</div>
+      <div class="group">
+        <div class="grouplbl"><span class="tag">過去式</span> past <span class="mk" id="mkPt"></span></div>
+        <div class="opts" id="grpPt">${optBtns(ptOpts,"pt")}</div>
+      </div>
+      <div class="group">
+        <div class="grouplbl"><span class="tag">過去分詞</span> p.p. <span class="mk" id="mkPp"></span></div>
+        <div class="opts" id="grpPp">${optBtns(ppOpts,"pp")}</div>
+      </div>
+      <button class="submit" id="submitBtn" disabled>請先各選一個答案</button>
+      <div class="result" id="result"></div>
+    </div>
+    ${reviewFamHtml()}`;
+  app().querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>pickOpt(b)));
+  document.getElementById("submitBtn").addEventListener("click",onReviewSubmit);
+  document.getElementById("rvResetBtn").addEventListener("click",()=>{ if(confirm("重置綜合複習的熟悉度紀錄？（不影響闖關進度）")){ DB.review={}; saveDB(); nextReview(); } });
+  bindChips();
+}
+function onReviewSubmit(){
+  if(graded){ nextReview(); return; }
+  graded=true;
+  const okPt=ptPick===curRow[1], okPp=ppPick===curRow[2], allOk=okPt&&okPp;
+  const s=rs(curRow[0]);
+  if(allOk){ s.c++; s.s++; } else { s.w++; s.s=0; }
+  saveDB();
+  markGroup("pt", curRow[1]); markGroup("pp", curRow[2]);
+  document.getElementById("mkPt").textContent=okPt?"✅":"❌";
+  document.getElementById("mkPp").textContent=okPp?"✅":"❌";
+  setTimeout(()=> allOk?sndRight():sndWrong(), 110);
+  setTimeout(()=> speakThree(curRow[0]), 480);
+  const res=document.getElementById("result");
+  res.className="result "+(allOk?"ok":"no");
+  res.innerHTML=(allOk?(s.s>=2?"🟢 答對！記得很牢":"✅ 答對！再對一次就標記記得牢"):"❌ 再看一次正確變化")
+    +`<span class="three">${curRow[0]} – ${curRow[1]} – ${curRow[2]} <small>（${curRow[3]}）</small></span>`;
+  const sb=document.getElementById("submitBtn"); sb.disabled=false; sb.textContent="下一題 ▶";
+  const st=reviewStats();
+  const rb=document.querySelector(".rprog .bar>div"); if(rb) rb.style.width=(st.total?st.green/st.total*100:0)+"%";
+  const rt=document.querySelector(".rprog span:last-child"); if(rt) rt.textContent=`${st.green}/${st.total}`;
+  refreshReviewChips();
+}
+function reviewFamHtml(){
+  return `<div class="famtitle">
+      <span>複習熟悉度（點字發音）</span>
+      <span class="legend"><b style="background:var(--gray)"></b>未練<b style="background:var(--red)"></b>生疏<b style="background:var(--amber)"></b>練習中<b style="background:var(--green)"></b>記得牢</span>
+    </div>
+    <div class="chips" id="chips">${reviewChipsInner()}</div>
+    <div class="toolbar"><button id="rvResetBtn">↺ 重置綜合複習紀錄</button></div>`;
+}
+function reviewChipsInner(){
+  return reviewPool().map(r=>`<span class="chip" data-v="${r[0]}" title="${r[0]} – ${r[1]} – ${r[2]}（${r[3]}）" style="border-left-color:${colorOfReview(r[0])}">${r[0]}</span>`).join("");
+}
+function refreshReviewChips(){ const c=document.getElementById("chips"); if(c) c.innerHTML=reviewChipsInner(); bindChips(); }
+
 /* ===== 工具列 ===== */
 function bindTools(){
   const mb=document.getElementById("muteBtn");
   if(mb) mb.addEventListener("click",function(){ muted=!muted; this.textContent=muted?"🔇 音效關":"🔊 音效開"; if(muted&&"speechSynthesis"in window) speechSynthesis.cancel(); });
   const rb=document.getElementById("resetBtn");
-  if(rb) rb.addEventListener("click",()=>{ if(confirm("確定清除全部關卡與練習紀錄、重新開始嗎？")){ DB={ver:2,verbs:{}}; saveDB(); renderMap(); } });
+  if(rb) rb.addEventListener("click",()=>{ if(confirm("確定清除全部關卡與練習紀錄、重新開始嗎？")){ DB={ver:2,verbs:{},review:{}}; saveDB(); renderMap(); } });
 }
 document.getElementById("backBtn").addEventListener("click",()=>{ sndClick(); renderMap(); });
 
