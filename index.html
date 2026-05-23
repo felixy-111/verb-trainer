@@ -57,6 +57,9 @@
     content:"★"; position:absolute; top:8px; right:10px; color:var(--green); font-size:16px;
   }
   .region.cur{border-color:var(--blue);}
+  .rtbl{margin-top:8px; font-size:11px; padding:5px 10px; border:1px solid #C9D6E6;
+    background:#F8FBFF; color:var(--blue); border-radius:8px; cursor:pointer; font-weight:600;}
+  .rtbl:active{transform:scale(.94);}
 
   /* ===== 練習 ===== */
   .rprog{display:flex; align-items:center; gap:8px; margin:2px 2px 14px; font-size:12px; color:#5a6b7d;}
@@ -262,10 +265,21 @@ function totalMastered(){ return VERBS.filter(r=>vs(r[0]).m).length; }
 /* 每字所屬區、複習題庫（已解鎖區的字） */
 const VERB_REGION={}; REGION_LIST.forEach((reg,i)=>reg.forEach(r=>VERB_REGION[r[0]]=i));
 function reviewPool(){ const out=[]; REGION_LIST.forEach((reg,i)=>{ if(regionUnlocked(i)) out.push(...reg); }); return out; }
+
+/* 同一題至少間隔 8 題才再出現（題庫不足 8 時退而求其次，盡量不連續重複） */
+let recent=[];
+function notRecent(pool){
+  if(pool.length<=1) return pool;
+  const gap=Math.min(8, pool.length-1);
+  const avoid=new Set(recent.slice(-gap));
+  const cand=pool.filter(r=>!avoid.has(r[0]));
+  return cand.length?cand:pool;
+}
+function pushRecent(v){ recent.push(v); if(recent.length>8) recent.shift(); }
 function pickReview(){
   const pool=reviewPool(); if(!pool.length) return null;
   const weighted=[];
-  pool.forEach(r=>{ const s=rs(r[0]); const w=1+s.w*2+(s.s===0?1:0); for(let k=0;k<w;k++) weighted.push(r); });
+  notRecent(pool).forEach(r=>{ const s=rs(r[0]); const w=1+s.w*2+(s.s===0?1:0); for(let k=0;k<w;k++) weighted.push(r); });
   return weighted[Math.floor(Math.random()*weighted.length)];
 }
 
@@ -286,17 +300,27 @@ function sndClick(){ tone(660,0,0.05,"square",0.10); }
 function sndRight(){ tone(659.25,0,0.12,"sine",0.2); tone(987.77,0.10,0.18,"sine",0.2); }
 function sndWrong(){ tone(196,0,0.22,"sawtooth",0.16); tone(155.56,0.12,0.26,"sawtooth",0.15); }
 
-/* ===== 語音（念三態） ===== */
+/* ===== 語音（念三態）：優先自然女聲，避開難聽的 novelty 語音 ===== */
+let chosenVoice=null;
+function pickVoice(){
+  const vs=speechSynthesis.getVoices(); if(!vs.length) return null;
+  const prefer=["Samantha","Victoria","Allison","Ava","Susan","Karen","Moira","Tessa","Serena","Fiona","Zoe","Google US English","Microsoft Zira","Microsoft Aria"];
+  for(const name of prefer){
+    const v=vs.find(x=>/^en/i.test(x.lang)&&x.name===name) || vs.find(x=>/^en/i.test(x.lang)&&x.name.startsWith(name));
+    if(v) return v;
+  }
+  const novelty=/(bells|bad news|good news|bahh|bubbles|cellos|organ|trinoids|whisper|wobble|zarvox|boing|jester|junior|ralph|albert|fred|superstar|rocko|shelley|grandma|grandpa|flo\b|eddy|reed|sandy|rishi|kathy)/i;
+  return vs.find(x=>/en[-_]US/i.test(x.lang)&&!novelty.test(x.name)) || vs.find(x=>/^en/i.test(x.lang)) || null;
+}
+function getVoice(){ if(!chosenVoice) chosenVoice=pickVoice(); return chosenVoice; }
 function speakThree(v){
   if(muted || !("speechSynthesis" in window)) return;
   const row=VERBS.find(r=>r[0]===v); if(!row) return;
   try{
     speechSynthesis.cancel();
     const u=new SpeechSynthesisUtterance(row[0]+", "+row[1]+", "+row[2]);
-    u.lang="en-US"; u.rate=0.8;
-    const vsx=speechSynthesis.getVoices();
-    const en=vsx.find(x=>/en[-_]US/i.test(x.lang))||vsx.find(x=>/^en/i.test(x.lang));
-    if(en) u.voice=en;
+    u.lang="en-US"; u.rate=0.85; u.pitch=1.05;
+    const vo=getVoice(); if(vo){ u.voice=vo; u.lang=vo.lang; }
     speechSynthesis.speak(u);
   }catch(e){}
 }
@@ -372,6 +396,7 @@ function renderMap(){
         <div class="lv">LV ${i+1}</div>
         <div class="name">${REGION_NAMES[i]}</div>
         ${status}
+        ${unlocked?`<button class="rtbl" data-ri="${i}">📖 單字表</button>`:""}
       </div>`;
   });
   html+=`</div>
@@ -385,6 +410,7 @@ function renderMap(){
     if(!regionUnlocked(ri)){ sndWrong(); return; }
     sndClick(); enterRegion(ri);
   }));
+  app().querySelectorAll(".rtbl").forEach(b=>b.addEventListener("click",(e)=>{ e.stopPropagation(); sndClick(); enterWordlist(+b.dataset.ri); }));
   document.getElementById("wlBtn").addEventListener("click",()=>{ sndClick(); enterWordlist(); });
   document.getElementById("rvBtn").addEventListener("click",()=>{ sndClick(); enterReview(); });
   bindTools();
@@ -403,7 +429,7 @@ function ringSvg(m,n,done){
 
 /* ===== 進入區、出題 ===== */
 function enterRegion(ri){
-  curRegion=ri; view="quiz";
+  curRegion=ri; view="quiz"; recent=[];
   document.getElementById("backBtn").style.display="inline-block";
   document.getElementById("hTitle").textContent=`LV ${ri+1}・${REGION_NAMES[ri]}`;
   document.getElementById("hSub").textContent="選原形的「過去式」＋「過去分詞」";
@@ -412,11 +438,13 @@ function enterRegion(ri){
 function pickInRegion(ri){
   const pool=REGION_LIST[ri].filter(r=>!vs(r[0]).m);
   if(!pool.length) return null;
-  return pool[Math.floor(Math.random()*pool.length)];
+  const cand=notRecent(pool);
+  return cand[Math.floor(Math.random()*cand.length)];
 }
 function nextQuestion(){
   if(regionDone(curRegion)){ renderClear(); return; }
   curRow=pickInRegion(curRegion);
+  pushRecent(curRow[0]);
   ptOpts=shuffle([curRow[1], ...generateDistractors(curRow,1)]);
   ppOpts=shuffle([curRow[2], ...generateDistractors(curRow,2)]);
   ptPick=null; ppPick=null; graded=false;
@@ -448,15 +476,9 @@ function renderQuiz(){
       <button class="submit" id="submitBtn" disabled>請先各選一個答案</button>
       <div class="result" id="result"></div>
     </div>
-    <button class="seetable" id="seeTableBtn">📖 看本區變化表</button>
-    <div class="wltable regtable" id="regTable" style="display:none">${REGION_LIST[curRegion].map(r=>wlRow(r,curRegion,true)).join("")}</div>
     ${famHtml()}`;
   app().querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>pickOpt(b)));
   document.getElementById("submitBtn").addEventListener("click",onSubmit);
-  const stb=document.getElementById("seeTableBtn");
-  stb.addEventListener("click",()=>{ sndClick(); const t=document.getElementById("regTable");
-    const show=t.style.display==="none"; t.style.display=show?"block":"none";
-    stb.textContent=show?"📖 收合變化表":"📖 看本區變化表"; if(show) bindWlRows(); });
   bindChips();
 }
 function pickOpt(btn){
@@ -562,12 +584,14 @@ function wlRow(r,i,unlocked){
 function bindWlRows(){ app().querySelectorAll(".wlrow:not(.locked)").forEach(el=>el.addEventListener("click",()=>{ sndClick(); speakThree(el.dataset.v); })); }
 
 let wlTab="region";
-function enterWordlist(){
+function enterWordlist(focusRegion){
   view="wordlist"; curRegion=null;
   document.getElementById("backBtn").style.display="inline-block";
   document.getElementById("hTitle").textContent="📖 單字表";
   document.getElementById("hSub").textContent="已解鎖區可看完整三態，未解鎖顯示 🔒";
+  if(focusRegion!=null) wlTab="region";
   renderWordlist();
+  if(focusRegion!=null){ const el=document.getElementById("wlsec-"+focusRegion); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}); }
 }
 function renderWordlist(){
   app().innerHTML=`<div class="tabs">
@@ -581,8 +605,8 @@ function wlRegionHtml(){
   return REGION_LIST.map((reg,i)=>{
     const unlocked=regionUnlocked(i);
     const head=`<div class="wlhead"><span>LV ${i+1}・${REGION_NAMES[i]}</span>${unlocked?"":"<span>🔒</span>"}</div>`;
-    if(!unlocked) return `<div class="wlsec">${head}<div class="wllock">完成前一區即可解鎖查看</div></div>`;
-    return `<div class="wlsec">${head}<div class="wltable">${reg.map(r=>wlRow(r,i,true)).join("")}</div></div>`;
+    if(!unlocked) return `<div class="wlsec" id="wlsec-${i}">${head}<div class="wllock">完成前一區即可解鎖查看</div></div>`;
+    return `<div class="wlsec" id="wlsec-${i}">${head}<div class="wltable">${reg.map(r=>wlRow(r,i,true)).join("")}</div></div>`;
   }).join("");
 }
 function wlRulesHtml(){
@@ -595,7 +619,7 @@ function wlRulesHtml(){
 
 /* ===== 綜合複習（獨立紀錄、無限刷） ===== */
 function enterReview(){
-  view="review"; curRegion=null;
+  view="review"; curRegion=null; recent=[];
   document.getElementById("backBtn").style.display="inline-block";
   document.getElementById("hTitle").textContent="🔁 綜合複習";
   document.getElementById("hSub").textContent="已解鎖區混合測驗 ‧ 不影響闖關進度";
@@ -606,6 +630,7 @@ function nextReview(){
   curRow=pickReview();
   if(!curRow){ app().innerHTML=`<div class="clear"><div class="big">📭</div><p>目前還沒有可複習的單字，先去闖關解鎖吧！</p><div class="toolbar"><button id="toMapBtn">回地圖</button></div></div>`;
     document.getElementById("toMapBtn").addEventListener("click",()=>{ sndClick(); renderMap(); }); return; }
+  pushRecent(curRow[0]);
   ptOpts=shuffle([curRow[1], ...generateDistractors(curRow,1)]);
   ppOpts=shuffle([curRow[2], ...generateDistractors(curRow,2)]);
   ptPick=null; ppPick=null; graded=false;
@@ -683,7 +708,7 @@ function bindTools(){
 }
 document.getElementById("backBtn").addEventListener("click",()=>{ sndClick(); renderMap(); });
 
-if("speechSynthesis" in window){ speechSynthesis.onvoiceschanged=()=>{}; speechSynthesis.getVoices(); }
+if("speechSynthesis" in window){ speechSynthesis.onvoiceschanged=()=>{ chosenVoice=null; }; speechSynthesis.getVoices(); }
 renderMap();
 </script>
 </body>
