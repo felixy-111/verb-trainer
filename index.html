@@ -6,6 +6,9 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1F3A5F">
+<meta name="apple-mobile-web-app-title" content="三態闖關">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>動詞三態闖關</title>
 <style>
   :root{
@@ -116,7 +119,15 @@
     background:var(--navy); color:#fff; border-radius:12px; cursor:pointer;
   }
 
-  .toolbar{display:flex; justify-content:center; gap:10px; margin-top:18px;}
+  .statbar{display:flex; justify-content:space-around; gap:6px; background:#fff; border-radius:12px;
+    padding:10px 6px; margin-bottom:12px; box-shadow:0 2px 6px rgba(31,58,95,.08); font-size:12px; color:#5a6b7d;}
+  .statbar b{color:var(--navy); font-size:14px;}
+  .tinput{width:100%; font-size:20px; font-weight:600; padding:13px 12px; border:2px solid #D5E0EE;
+    border-radius:12px; color:var(--navy); text-align:center; outline:none;}
+  .tinput:focus{border-color:var(--blue); background:#F8FBFF;}
+  .tinput.correct{border-color:var(--green); background:#E5F6EC; color:var(--green);}
+  .tinput.wrong{border-color:var(--red); background:#FCE8E8; color:var(--red);}
+  .toolbar{display:flex; justify-content:center; gap:10px; margin-top:18px; flex-wrap:wrap;}
   .toolbar button{
     font-size:13px; padding:9px 14px; border:1px solid #C9D6E6; background:#fff;
     border-radius:9px; cursor:pointer; color:#46586b;
@@ -213,6 +224,7 @@ const RAW = [
   ["come","came","come","來"],["become","became","become","變成"],["run","ran","run","跑"]
 ];
 
+const SENTENCES = {"cut": {"past": "I ___ the paper yesterday.", "pp": "I have ___ the cake."}, "put": {"past": "She ___ the book on the desk.", "pp": "He has ___ his phone away."}, "hit": {"past": "He ___ the ball last week.", "pp": "She has ___ the target."}, "let": {"past": "Mom ___ me go out yesterday.", "pp": "He has ___ me borrow his pen."}, "set": {"past": "I ___ the alarm last night.", "pp": "She has ___ the table for dinner."}, "shut": {"past": "He ___ the door an hour ago.", "pp": "I have ___ the window."}, "cost": {"past": "It ___ 100 dollars yesterday.", "pp": "This book has ___ me a lot."}, "hurt": {"past": "I ___ my leg last week.", "pp": "She has ___ her feelings."}, "read": {"past": "I ___ that book yesterday.", "pp": "He has ___ three novels this month."}, "spread": {"past": "The news ___ quickly last week.", "pp": "She has ___ butter on the toast."}, "quit": {"past": "He ___ the team last year.", "pp": "I have ___ smoking."}, "bet": {"past": "I ___ him 10 dollars yesterday.", "pp": "He has ___ all his money."}, "fit": {"past": "The shoes ___ me well last year.", "pp": "This shirt has ___ perfectly."}, "buy": {"past": "She ___ a gift yesterday.", "pp": "I have ___ a new bike."}, "bring": {"past": "He ___ snacks to class yesterday.", "pp": "Mom has ___ me lunch."}, "think": {"past": "I ___ it was easy yesterday.", "pp": "She has ___ about it a lot."}, "catch": {"past": "He ___ a fish last week.", "pp": "I have ___ the ball."}, "teach": {"past": "Mr. Li ___ us math yesterday.", "pp": "She has ___ me how to swim."}, "fight": {"past": "They ___ in the park yesterday.", "pp": "He has ___ with his brother."}, "build": {"past": "They ___ a house last year.", "pp": "We have ___ a snowman."}, "send": {"past": "She ___ a nice gift to me yesterday.", "pp": "I have already ___ you a birthday card."}, "spend": {"past": "I ___ two hours on math homework yesterday.", "pp": "I have ___ all my money on snacks."}, "lend": {"past": "He ___ me his favorite pen last week.", "pp": "She has already ___ me her book today."}, "bend": {"past": "He ___ the spoon with his hands yesterday.", "pp": "She has ___ the straw into a circle."}, "lose": {"past": "I ___ my new keys at school yesterday.", "pp": "I have already ___ my wallet this morning."}, "feel": {"past": "I ___ very sick after dinner last night.", "pp": "I have ___ so good all day today."}, "keep": {"past": "He ___ the secret from me last year.", "pp": "I have always ___ the ticket for you."}, "sleep": {"past": "I ___ for about ten hours last night.", "pp": "I have already ___ for nine hours today."}, "sweep": {"past": "She ___ all the floor before dinner yesterday.", "pp": "I have already ___ the kitchen floor today."}, "meet": {"past": "I ___ him at the old park yesterday.", "pp": "I have already ___ her many times before."}, "feed": {"past": "I ___ my cat very early this morning.", "pp": "I have already ___ my dog twice today."}, "lead": {"past": "He ___ our school team to victory last year.", "pp": "She has ___ the group for many years."}, "leave": {"past": "I ___ my house at eight yesterday morning.", "pp": "I have already ___ my bag at school."}, "mean": {"past": "He ___ every single word he said yesterday.", "pp": "I have never ___ to hurt anyone before."}, "sit": {"past": "I ___ on the old wooden chair yesterday.", "pp": "I have already ___ here for an hour."}, "stand": {"past": "He ___ in line for an hour yesterday.", "pp": "I have already ___ outside for ten minutes."}, "understand": {"past": "I ___ the very difficult math lesson yesterday.", "pp": "I have already ___ the entire question today."}, "hold": {"past": "He ___ my hand with a firm grip yesterday.", "pp": "I have ___ the trophy for a year."}, "find": {"past": "I ___ a coin on the street yesterday.", "pp": "I have already ___ my missing keys today."}, "hear": {"past": "I ___ a very strange noise last night.", "pp": "I have just ___ the wonderful news today."}, "hang": {"past": "He ___ his coat on the hook yesterday.", "pp": "She has ___ the picture on the wall."}, "dig": {"past": "We ___ a hole in the yard last week.", "pp": "He has ___ a deep hole for the tree."}, "win": {"past": "Our team ___ the game last night.", "pp": "She has ___ three prizes this year."}, "stick": {"past": "The stamp ___ to the envelope yesterday.", "pp": "The tape has ___ to the paper."}, "sell": {"past": "He ___ his old bike last month.", "pp": "She has ___ all the cookies."}, "tell": {"past": "Mom ___ me a story last night.", "pp": "He has ___ us the truth."}, "pay": {"past": "I ___ ten dollars for the book yesterday.", "pp": "She has ___ the bill already."}, "say": {"past": "He ___ hello to me yesterday.", "pp": "She has ___ sorry to her friend."}, "make": {"past": "I ___ a card for Mom last week.", "pp": "He has ___ a model plane."}, "have": {"past": "We ___ a big dinner yesterday.", "pp": "She has ___ a cold for three days."}, "get": {"past": "I ___ a gift from my aunt yesterday.", "pp": "He has ___ good grades this term."}, "shoot": {"past": "He ___ the ball into the goal last night.", "pp": "She has ___ three arrows at the target."}, "light": {"past": "Dad ___ the candle last night.", "pp": "She has ___ the lamp in her room."}, "lay": {"past": "He ___ the book on the desk yesterday.", "pp": "She has ___ the blanket on the bed."}, "shine": {"past": "The sun ___ brightly yesterday.", "pp": "Her eyes have ___ with joy."}, "go": {"past": "We ___ to the park last Saturday.", "pp": "She has ___ to Japan twice."}, "do": {"past": "I ___ my homework yesterday evening.", "pp": "He has ___ all his chores."}, "see": {"past": "I ___ a rainbow yesterday.", "pp": "She has ___ that movie three times."}, "eat": {"past": "We ___ pizza for dinner last night.", "pp": "He has ___ all the cake."}, "give": {"past": "Mom ___ me a hug yesterday.", "pp": "She has ___ her old toys away."}, "take": {"past": "I ___ my dog for a walk yesterday.", "pp": "She has already ___ all the trash out."}, "write": {"past": "She ___ a letter to me last week.", "pp": "We have already ___ a report for class."}, "drive": {"past": "My dad ___ me to school yesterday morning.", "pp": "My mom has already ___ us to the park."}, "ride": {"past": "I ___ my bike to school last Friday.", "pp": "My brother has ___ his scooter to school."}, "rise": {"past": "The sun ___ in the east yesterday morning.", "pp": "The sun has ___ high in the sky."}, "speak": {"past": "She ___ to the teacher about homework yesterday.", "pp": "He has ___ English since he was five."}, "break": {"past": "He ___ the window with a ball yesterday.", "pp": "Someone has ___ the window in our room."}, "choose": {"past": "We ___ a movie to watch last night.", "pp": "She has ___ a new book to read."}, "freeze": {"past": "The water ___ in the freezer last night.", "pp": "My hands have ___ because of the cold."}, "steal": {"past": "A man ___ my phone in the park yesterday.", "pp": "Someone has ___ my bag from the classroom."}, "wake": {"past": "I ___ up early for my school yesterday.", "pp": "My mom has ___ up to make breakfast."}, "wear": {"past": "I ___ my new shoes to school yesterday.", "pp": "She has already ___ that hat many times."}, "tear": {"past": "She ___ the paper into small pieces yesterday.", "pp": "The dog has already ___ up my homework."}, "swear": {"past": "He ___ at me for no reason yesterday.", "pp": "He has already ___ the oath of office."}, "fly": {"past": "The bird ___ early to the south yesterday.", "pp": "The plane has already ___ for three hours."}, "draw": {"past": "She ___ a beautiful picture of me yesterday.", "pp": "He has ___ a map for the project."}, "throw": {"past": "He ___ the ball quickly to me yesterday.", "pp": "She has already ___ the old paper away."}, "grow": {"past": "The plant ___ up very fast last summer.", "pp": "My hair has ___ a lot this year."}, "know": {"past": "I ___ the answer to the question yesterday.", "pp": "She has ___ him for a long time."}, "blow": {"past": "The wind ___ very hard outside last night.", "pp": "Someone has already ___ out all the candles."}, "show": {"past": "My sister ___ her new bike to me yesterday.", "pp": "He has ___ his magic trick to the class."}, "sing": {"past": "She ___ a beautiful song last night.", "pp": "I have never ___ this song before."}, "ring": {"past": "The phone ___ three times an hour ago.", "pp": "The bell has ___ for lunch already."}, "drink": {"past": "We ___ juice after the game last week.", "pp": "Have you ___ enough water today?"}, "swim": {"past": "He ___ in the pool two days ago.", "pp": "I have ___ in the ocean many times."}, "begin": {"past": "The movie ___ at seven o'clock last night.", "pp": "She has ___ her homework already."}, "sink": {"past": "The ship ___ quickly last night.", "pp": "The stone has ___ to the bottom."}, "fall": {"past": "I ___ off my bike yesterday afternoon.", "pp": "The leaves have ___ from the tree."}, "forget": {"past": "I ___ my keys at home this morning.", "pp": "He has ___ to bring his lunch."}, "forgive": {"past": "She ___ me for the mistake last week.", "pp": "Has he ___ you for lying yet?"}, "hide": {"past": "The cat ___ under the bed last night.", "pp": "She has ___ my phone somewhere."}, "bite": {"past": "The dog ___ my shoe yesterday.", "pp": "Have you ever ___ by a mosquito?"}, "beat": {"past": "Our team ___ them in the game last week.", "pp": "He has ___ me in chess many times."}, "mistake": {"past": "I ___ her for my sister yesterday.", "pp": "She has ___ his kindness for love."}, "lie": {"past": "The dog ___ on the floor all afternoon yesterday.", "pp": "He has ___ in bed all morning."}, "come": {"past": "My aunt ___ to visit us last weekend.", "pp": "Has your friend ___ to the party yet?"}, "become": {"past": "He ___ a teacher last year.", "pp": "She has ___ very good at English."}, "run": {"past": "I ___ five kilometers this morning.", "pp": "Have you ever ___ a marathon?"}};
 function typeOf(r){
   const [a,b,c]=r;
   if(a===b&&b===c) return "aaa";
@@ -221,7 +233,7 @@ function typeOf(r){
   return "abc";
 }
 /* 高頻常見字（往前排） */
-const COMMON = new Set(["go","do","see","get","make","take","come","give","know","think","say","find","tell","put","run","eat","read","let","sit","buy","cut","win","pay","feel","keep","leave","meet","hold","hear","have","sell","stand","bring","catch","teach","sleep","speak","break","write","drive","fall","grow","show","sing","drink","begin","wear","throw","fly","draw","know","hit","set","lose","build","send","spend"]);
+const COMMON = new Set(["go","do","see","get","make","take","come","give","know","think","say","find","tell","put","run","eat","read","let","sit","buy","cut","win","pay","feel","keep","leave","meet","hold","hear","have","sell","stand","bring","catch","teach","sleep","speak","break","write","drive","fall","grow","show","sing","drink","begin","wear","throw","fly","draw","hit","set","lose","build","send","spend"]);
 const TYPEW = {aaa:0, aba:1, abb:1, abc:2};
 function diffScore(r){
   const len=r[0].length;
@@ -252,10 +264,44 @@ const REGION_NAMES = ["入門","起步","熟悉","進階","挑戰","強化","精
 const KEY="verbTrainer_v2";
 const MASTER_STREAK=2;
 let DB = loadDB();
-function loadDB(){ try{const d=JSON.parse(localStorage.getItem(KEY)); if(d&&d.ver===2&&d.verbs){ if(!d.review) d.review={}; return d; }}catch(e){} return {ver:2, verbs:{}, review:{}}; }
+function loadDB(){
+  try{const d=JSON.parse(localStorage.getItem(KEY)); if(d&&d.ver===2&&d.verbs){
+    if(!d.review) d.review={};
+    if(!d.stats) d.stats={days:{}, totalQ:0, totalCorrect:0};   // #5 學習統計
+    if(!d.settings) d.settings={answerMode:"choice"};           // #2 選擇/打字
+    return d;
+  }}catch(e){}
+  return {ver:2, verbs:{}, review:{}, stats:{days:{}, totalQ:0, totalCorrect:0}, settings:{answerMode:"choice"}};
+}
 function saveDB(){ localStorage.setItem(KEY, JSON.stringify(DB)); }
 function vs(v){ if(!DB.verbs[v]) DB.verbs[v]={c:0,w:0,s:0,m:false}; return DB.verbs[v]; }
-function rs(v){ if(!DB.review[v]) DB.review[v]={c:0,w:0,s:0}; return DB.review[v]; }  // 綜合複習：獨立紀錄
+function rs(v){ if(!DB.review[v]) DB.review[v]={c:0,w:0,s:0,ivl:0,due:0}; return DB.review[v]; }  // 綜合複習＋SRS 排程
+
+/* #5 學習統計：每題作答都記一次（闖關＋複習共用） */
+function todayStr(){ const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0"); }
+function logAnswer(correct){
+  const t=todayStr();
+  DB.stats.days[t]=(DB.stats.days[t]||0)+1;
+  DB.stats.totalQ++; if(correct) DB.stats.totalCorrect++;
+}
+function dayStreak(){
+  const days=DB.stats.days||{}; let n=0; const d=new Date();
+  for(;;){ const k=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+    if(days[k]){ n++; d.setDate(d.getDate()-1); } else break; }
+  return n;
+}
+/* #3 SRS：複習答對後間隔遞增(天)，答錯歸零；pickReview 依逾期程度加權 */
+const SRS_IVL=[1,3,7,16,35];
+function srsSchedule(s, correct){
+  if(correct){ const i=Math.min(s.s, SRS_IVL.length-1); s.ivl=SRS_IVL[i]; }
+  else { s.ivl=0; }
+  s.due = Date.now() + s.ivl*86400000;
+}
+function srsOverdueWeight(s){
+  if(!s.due) return 4;                      // 沒排程過(沒複習過) → 最該練
+  const over=(Date.now()-s.due)/86400000;   // 逾期天數
+  return over>=0 ? 3+Math.min(over,7) : 1;  // 到期/逾期權重高，未到期低
+}
 
 function regionMastered(ri){ return REGION_LIST[ri].filter(r=>vs(r[0]).m).length; }
 function regionDone(ri){ return regionMastered(ri)===REGION_LIST[ri].length; }
@@ -279,9 +325,10 @@ function pushRecent(v){ recent.push(v); if(recent.length>8) recent.shift(); }
 function pickReview(){
   const pool=reviewPool(); if(!pool.length) return null;
   const weighted=[];
-  notRecent(pool).forEach(r=>{ const s=rs(r[0]); const w=1+s.w*2+(s.s===0?1:0); for(let k=0;k<w;k++) weighted.push(r); });
-  return weighted[Math.floor(Math.random()*weighted.length)];
+  notRecent(pool).forEach(r=>{ const s=rs(r[0]); const w=Math.max(1, Math.round(srsOverdueWeight(s)+s.w*2)); for(let k=0;k<w;k++) weighted.push(r); });
+  return weighted.length ? weighted[Math.floor(Math.random()*weighted.length)] : pool[0];
 }
+function dueCount(){ return reviewPool().filter(r=>{ const s=rs(r[0]); return s.due && Date.now()>=s.due; }).length; }
 
 /* ===== 音效（Web Audio 合成） ===== */
 let muted=false, actx=null;
@@ -358,11 +405,13 @@ function fakeIrregular(base){
 function isLetters(s){ return /^[a-z]+$/.test(s); }
 function generateDistractors(row, answerIdx){
   const base=row[0], answer=row[answerIdx];
-  const banned=new Set([row[0],row[1],row[2]]); // 排除真三態，避免洩漏/重複
+  const otherForm = answerIdx===1 ? row[2] : row[1]; // 過去式題→拿 pp 當誘答；pp 題→拿過去式當誘答
+  const banned=new Set([answer]);                    // 只禁正解本身（原形/另一態反而是好誘答）
   const out=[], set=new Set();
   const tryAdd=(val)=>{ if(!val) return; val=(""+val).toLowerCase(); if(val.length<2||!isLetters(val)) return; if(banned.has(val)||set.has(val)) return; set.add(val); out.push(val); };
-  // 依優先序：規則化錯誤最像、最有教學意義 → 字幹母音變化 → 字尾變化 → 拼湊兜底
+  // 依優先序：原形/另一態(分辨三態) → 加 ed(最常犯) → 字幹母音變化 → 字尾變化 → 拼湊兜底
   const tiers=[
+    [base, otherForm],                                                   // 真實的原形與另一態：考三態辨別
     [regularize(base), base+"ed"],                                       // 學生最常犯的「加 ed」
     [...vowelSwaps(base), ...vowelSwaps(answer)],                         // 保留字幹框架的母音變化
     [answer.replace(/e$/,"")+"en", answer+"en", base+"en", base+"t"],    // 字尾變化
@@ -391,9 +440,17 @@ function renderMap(){
   document.getElementById("hTitle").textContent="動詞三態闖關";
   document.getElementById("hSub").textContent=`精通 ${totalMastered()} / ${VERBS.length} 個動詞`;
   setTop();
-  let html=`<div class="hub">
-      <button class="hubbtn" id="wlBtn"><b>📖 單字表</b><span>對照背三態變化</span></button>
-      <button class="hubbtn" id="rvBtn"><b>🔁 綜合複習</b><span>混合測驗自我檢查</span></button>
+  const acc = DB.stats.totalQ ? Math.round(DB.stats.totalCorrect/DB.stats.totalQ*100) : 0;
+  const due = dueCount();
+  let html=`<div class="statbar">
+      <span>🔥 連續 <b>${dayStreak()}</b> 天</span>
+      <span>✍️ 累計 <b>${DB.stats.totalQ}</b> 題</span>
+      <span>🎯 正確率 <b>${acc}%</b></span>
+    </div>
+    <div class="hub">
+      <button class="hubbtn" id="wlBtn"><b>📖 單字表</b><span>對照背三態</span></button>
+      <button class="hubbtn" id="rvBtn"><b>🔁 綜合複習</b><span>${due>0?`🔴 ${due} 個該複習`:"混合測驗"}</span></button>
+      <button class="hubbtn" id="sentBtn"><b>📝 例句填空</b><span>句子裡用對</span></button>
     </div>
     <div class="maptitle">選一區開始 ‧ 整區精通才解鎖下一區</div><div class="regions">`;
   REGION_LIST.forEach((reg,i)=>{
@@ -410,6 +467,7 @@ function renderMap(){
   });
   html+=`</div>
     <div class="toolbar">
+      <button id="modeBtn">${DB.settings.answerMode==="type"?"⌨️ 打字作答":"🔘 選擇作答"}</button>
       <button id="muteBtn">${muted?"🔇 音效關":"🔊 音效開"}</button>
       <button id="resetBtn">↺ 重置全部進度</button>
     </div>`;
@@ -422,6 +480,7 @@ function renderMap(){
   app().querySelectorAll(".rtbl").forEach(b=>b.addEventListener("click",(e)=>{ e.stopPropagation(); sndClick(); enterWordlist(+b.dataset.ri); }));
   document.getElementById("wlBtn").addEventListener("click",()=>{ sndClick(); enterWordlist(); });
   document.getElementById("rvBtn").addEventListener("click",()=>{ sndClick(); enterReview(); });
+  document.getElementById("sentBtn").addEventListener("click",()=>{ sndClick(); enterSentence(); });
   bindTools();
 }
 function ringSvg(m,n,done){
@@ -445,9 +504,23 @@ function enterRegion(ri){
   nextQuestion();
 }
 function pickInRegion(ri){
-  const pool=REGION_LIST[ri].filter(r=>!vs(r[0]).m);
-  if(!pool.length) return null;
-  const cand=notRecent(pool);
+  const region=REGION_LIST[ri];
+  const unmastered=region.filter(r=>!vs(r[0]).m);
+  if(!unmastered.length) return null;
+  // 排除最近出現過的字（間隔窗固定看區的大小，不隨剩餘字數縮水）
+  const win=Math.min(6, region.length-1);
+  const recentSet=new Set(recent.slice(-win));
+  let cand=unmastered.filter(r=>!recentSet.has(r[0]));
+  // 尾段：沒精通的字剩 ≤3 個 → 補進「已精通」的字當間隔器，
+  // 避免同一個還沒過的字連續轟炸（已精通字答錯不會掉精通，純穿插複習）
+  if(unmastered.length<=3){
+    const spacers=region.filter(r=>vs(r[0]).m && !recentSet.has(r[0]));
+    const weighted=[];
+    cand.forEach(r=>{ for(let k=0;k<3;k++) weighted.push(r); }); // 沒過的字權重高(主練)
+    spacers.forEach(r=>weighted.push(r));                        // 過了的字低權重(間隔)
+    if(weighted.length) return weighted[Math.floor(Math.random()*weighted.length)];
+  }
+  if(!cand.length) cand=unmastered; // 區太小、全被排除 → 退回（仍盡量不連續）
   return cand[Math.floor(Math.random()*cand.length)];
 }
 function nextQuestion(){
@@ -459,9 +532,37 @@ function nextQuestion(){
   ptPick=null; ppPick=null; graded=false;
   renderQuiz();
 }
+/* ===== 作答區（選擇/打字共用） ===== */
+const isType=()=>DB.settings.answerMode==="type";
+function answerArea(grp, opts){
+  if(isType()) return `<input class="tinput" id="in_${grp}" data-grp="${grp}" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="輸入${grp==='pt'?'過去式':'過去分詞'}">`;
+  return `<div class="opts" id="grp${grp==='pt'?'Pt':'Pp'}">${opts.map(o=>`<button class="opt" data-grp="${grp}" data-v="${o}">${o}</button>`).join("")}</div>`;
+}
+function bindAnswerArea(onSubmitFn){
+  document.getElementById("submitBtn").addEventListener("click",onSubmitFn);
+  if(isType()){
+    app().querySelectorAll(".tinput").forEach(inp=>inp.addEventListener("input",updateSubmit));
+    // 打字模式可按 Enter 直接作答
+    app().querySelectorAll(".tinput").forEach(inp=>inp.addEventListener("keydown",e=>{ if(e.key==="Enter" && answersReady()){ onSubmitFn(); } }));
+  } else {
+    app().querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>pickOpt(b)));
+  }
+}
+function answersReady(){
+  if(isType()) return !!(val("in_pt") && val("in_pp"));
+  return ptPick!=null && ppPick!=null;
+}
+function val(id){ const e=document.getElementById(id); return e?e.value.trim():""; }
+function readPicks(){ if(isType()){ ptPick=val("in_pt").toLowerCase(); ppPick=val("in_pp").toLowerCase(); } }
+function updateSubmit(){ const sb=document.getElementById("submitBtn"); if(answersReady()){ sb.disabled=false; sb.textContent="確認作答"; } }
+function markType(grp, correct, ok){
+  const inp=document.getElementById("in_"+grp); if(!inp) return;
+  inp.disabled=true; inp.classList.add(ok?"correct":"wrong");
+  if(!ok) inp.value = inp.value + "  →  " + correct;
+}
+
 function renderQuiz(){
   const m=regionMastered(curRegion), n=REGION_LIST[curRegion].length;
-  const optBtns=(opts,grp)=>opts.map(o=>`<button class="opt" data-grp="${grp}" data-v="${o}">${o}</button>`).join("");
   app().innerHTML=`
     <div class="rprog">
       <span>本區進度</span>
@@ -475,19 +576,18 @@ function renderQuiz(){
 
       <div class="group">
         <div class="grouplbl"><span class="tag">過去式</span> past <span class="mk" id="mkPt"></span></div>
-        <div class="opts" id="grpPt">${optBtns(ptOpts,"pt")}</div>
+        ${answerArea("pt", ptOpts)}
       </div>
       <div class="group">
         <div class="grouplbl"><span class="tag">過去分詞</span> p.p. <span class="mk" id="mkPp"></span></div>
-        <div class="opts" id="grpPp">${optBtns(ppOpts,"pp")}</div>
+        ${answerArea("pp", ppOpts)}
       </div>
 
-      <button class="submit" id="submitBtn" disabled>請先各選一個答案</button>
+      <button class="submit" id="submitBtn" disabled>${isType()?"輸入後按確認":"請先各選一個答案"}</button>
       <div class="result" id="result"></div>
     </div>
     ${famHtml()}`;
-  app().querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>pickOpt(b)));
-  document.getElementById("submitBtn").addEventListener("click",onSubmit);
+  bindAnswerArea(onSubmit);
   bindChips();
 }
 function pickOpt(btn){
@@ -497,16 +597,17 @@ function pickOpt(btn){
   btn.classList.add("sel");
   if(grp==="pt") ptPick=btn.dataset.v; else ppPick=btn.dataset.v;
   sndClick();
-  const sb=document.getElementById("submitBtn");
-  if(ptPick!=null && ppPick!=null){ sb.disabled=false; sb.textContent="確認作答"; }
+  updateSubmit();
 }
 function onSubmit(){
   if(graded){ nextQuestion(); return; }   // 第二次按 = 下一題
+  readPicks();
   graded=true;
   const okPt=ptPick===curRow[1], okPp=ppPick===curRow[2], allOk=okPt&&okPp;
   const s=vs(curRow[0]);
   if(allOk){ s.c++; s.s++; if(s.s>=MASTER_STREAK) s.m=true; }
   else { s.w++; s.s=0; }
+  logAnswer(allOk);
   saveDB();
   markGroup("pt", curRow[1]); markGroup("pp", curRow[2]);
   document.getElementById("mkPt").textContent=okPt?"✅":"❌";
@@ -527,6 +628,11 @@ function onSubmit(){
   refreshChips(); setTop();
 }
 function markGroup(grp, correct){
+  if(isType()){
+    const ok = (grp==="pt"?ptPick:ppPick)===correct;
+    markType(grp, correct, ok);
+    return;
+  }
   app().querySelectorAll(`.opt[data-grp="${grp}"]`).forEach(b=>{
     b.disabled=true;
     if(b.dataset.v===correct) b.classList.add("correct");
@@ -647,7 +753,6 @@ function nextReview(){
 }
 function renderReview(){
   const st=reviewStats();
-  const optBtns=(opts,grp)=>opts.map(o=>`<button class="opt" data-grp="${grp}" data-v="${o}">${o}</button>`).join("");
   app().innerHTML=`
     <div class="rprog"><span>記得牢</span>
       <div class="bar"><div style="width:${st.total?st.green/st.total*100:0}%"></div></div>
@@ -658,27 +763,29 @@ function renderReview(){
       <div class="hint">綜合複習 ‧ 過去式與過去分詞各是？</div>
       <div class="group">
         <div class="grouplbl"><span class="tag">過去式</span> past <span class="mk" id="mkPt"></span></div>
-        <div class="opts" id="grpPt">${optBtns(ptOpts,"pt")}</div>
+        ${answerArea("pt", ptOpts)}
       </div>
       <div class="group">
         <div class="grouplbl"><span class="tag">過去分詞</span> p.p. <span class="mk" id="mkPp"></span></div>
-        <div class="opts" id="grpPp">${optBtns(ppOpts,"pp")}</div>
+        ${answerArea("pp", ppOpts)}
       </div>
-      <button class="submit" id="submitBtn" disabled>請先各選一個答案</button>
+      <button class="submit" id="submitBtn" disabled>${isType()?"輸入後按確認":"請先各選一個答案"}</button>
       <div class="result" id="result"></div>
     </div>
     ${reviewFamHtml()}`;
-  app().querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>pickOpt(b)));
-  document.getElementById("submitBtn").addEventListener("click",onReviewSubmit);
+  bindAnswerArea(onReviewSubmit);
   document.getElementById("rvResetBtn").addEventListener("click",()=>{ if(confirm("重置綜合複習的熟悉度紀錄？（不影響闖關進度）")){ DB.review={}; saveDB(); nextReview(); } });
   bindChips();
 }
 function onReviewSubmit(){
   if(graded){ nextReview(); return; }
+  readPicks();
   graded=true;
   const okPt=ptPick===curRow[1], okPp=ppPick===curRow[2], allOk=okPt&&okPp;
   const s=rs(curRow[0]);
   if(allOk){ s.c++; s.s++; } else { s.w++; s.s=0; }
+  srsSchedule(s, allOk);
+  logAnswer(allOk);
   saveDB();
   markGroup("pt", curRow[1]); markGroup("pp", curRow[2]);
   document.getElementById("mkPt").textContent=okPt?"✅":"❌";
@@ -708,8 +815,82 @@ function reviewChipsInner(){
 }
 function refreshReviewChips(){ const c=document.getElementById("chips"); if(c) c.innerHTML=reviewChipsInner(); bindChips(); }
 
+/* ===== 例句填空（#13）：在句子裡用對過去式/過去分詞 ===== */
+let sentForm="past"; // 'past' | 'pp'
+function sentencePool(){ return reviewPool().filter(r=>SENTENCES[r[0]]); }
+function enterSentence(){
+  view="sentence"; curRegion=null; recent=[];
+  document.getElementById("backBtn").style.display="inline-block";
+  document.getElementById("hTitle").textContent="📝 例句填空";
+  document.getElementById("hSub").textContent="把句子裡的動詞改成正確形態";
+  nextSentence();
+}
+function nextSentence(){
+  const pool=sentencePool();
+  if(!pool.length){ app().innerHTML=`<div class="clear"><div class="big">📭</div><p>先去闖關解鎖一些動詞，才有例句可練！</p><div class="toolbar"><button id="toMapBtn">回地圖</button></div></div>`;
+    document.getElementById("toMapBtn").addEventListener("click",()=>{ sndClick(); renderMap(); }); return; }
+  curRow=notRecent(pool)[Math.floor(Math.random()*notRecent(pool).length)] || pool[0];
+  pushRecent(curRow[0]);
+  sentForm = Math.random()<0.5 ? "past" : "pp";
+  const idx = sentForm==="past"?1:2;
+  ptOpts = shuffle([curRow[idx], ...generateDistractors(curRow, idx)]);
+  ptPick=null; graded=false;
+  renderSentence();
+}
+function renderSentence(){
+  const idx = sentForm==="past"?1:2;
+  const sentence = (SENTENCES[curRow[0]]||{})[sentForm] || "___";
+  const blanked = sentence.replace("___", `<u style="color:var(--blue)">＿＿＿</u>`);
+  const formLbl = sentForm==="past" ? "過去式" : "過去分詞 (pp)";
+  const area = isType()
+    ? `<input class="tinput" id="in_pt" data-grp="pt" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="填入正確形態">`
+    : `<div class="opts" id="grpPt">${ptOpts.map(o=>`<button class="opt" data-grp="pt" data-v="${o}">${o}</button>`).join("")}</div>`;
+  app().innerHTML=`
+    <div class="qcard">
+      <div class="basecn" style="margin-bottom:6px">原形：<b style="color:var(--navy)">${curRow[0]}</b>（${curRow[3]}）</div>
+      <div style="font-size:20px; line-height:1.6; text-align:center; margin:14px 0; color:#2C3E50">${blanked}</div>
+      <div class="hint">空格要填 ${curRow[0]} 的「${formLbl}」</div>
+      <div class="group">${area}</div>
+      <button class="submit" id="submitBtn" disabled>${isType()?"輸入後按確認":"選一個答案"}</button>
+      <div class="result" id="result"></div>
+    </div>`;
+  if(isType()){
+    const inp=document.getElementById("in_pt");
+    inp.addEventListener("input",()=>{ const sb=document.getElementById("submitBtn"); if(inp.value.trim()){ sb.disabled=false; sb.textContent="確認作答"; } });
+    inp.addEventListener("keydown",e=>{ if(e.key==="Enter"&&inp.value.trim()) onSentenceSubmit(); });
+  } else {
+    app().querySelectorAll(".opt").forEach(b=>b.addEventListener("click",()=>{
+      if(graded) return;
+      app().querySelectorAll(".opt").forEach(x=>x.classList.remove("sel"));
+      b.classList.add("sel"); ptPick=b.dataset.v; sndClick();
+      const sb=document.getElementById("submitBtn"); sb.disabled=false; sb.textContent="確認作答";
+    }));
+  }
+  document.getElementById("submitBtn").addEventListener("click",onSentenceSubmit);
+}
+function onSentenceSubmit(){
+  if(graded){ nextSentence(); return; }
+  if(isType()) ptPick=(document.getElementById("in_pt").value||"").trim().toLowerCase();
+  graded=true;
+  const idx = sentForm==="past"?1:2;
+  const correct = curRow[idx];
+  const ok = ptPick===correct;
+  logAnswer(ok); saveDB();
+  if(isType()){ markType("pt", correct, ok); }
+  else { app().querySelectorAll(".opt").forEach(b=>{ b.disabled=true; if(b.dataset.v===correct) b.classList.add("correct"); else if(b.classList.contains("sel")) b.classList.add("wrong"); }); }
+  setTimeout(()=> ok?sndRight():sndWrong(), 110);
+  setTimeout(()=> speakThree(curRow[0]), 480);
+  const res=document.getElementById("result");
+  res.className="result "+(ok?"ok":"no");
+  const full=(SENTENCES[curRow[0]][sentForm]).replace("___", correct);
+  res.innerHTML=(ok?"✅ 正確！":"❌ 正解："+correct)+`<span class="three">${full}<br>${curRow[0]} – ${curRow[1]} – ${curRow[2]}</span>`;
+  const sb=document.getElementById("submitBtn"); sb.disabled=false; sb.textContent="下一句 ▶";
+}
+
 /* ===== 工具列 ===== */
 function bindTools(){
+  const mob=document.getElementById("modeBtn");
+  if(mob) mob.addEventListener("click",function(){ DB.settings.answerMode=DB.settings.answerMode==="type"?"choice":"type"; saveDB(); this.textContent=DB.settings.answerMode==="type"?"⌨️ 打字作答":"🔘 選擇作答"; });
   const mb=document.getElementById("muteBtn");
   if(mb) mb.addEventListener("click",function(){ muted=!muted; this.textContent=muted?"🔇 音效關":"🔊 音效開"; if(muted&&"speechSynthesis"in window) speechSynthesis.cancel(); });
   const rb=document.getElementById("resetBtn");
@@ -718,6 +899,7 @@ function bindTools(){
 document.getElementById("backBtn").addEventListener("click",()=>{ sndClick(); renderMap(); });
 
 if("speechSynthesis" in window){ speechSynthesis.onvoiceschanged=()=>{ chosenVoice=null; }; speechSynthesis.getVoices(); }
+if("serviceWorker" in navigator){ window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{})); }
 renderMap();
 </script>
 </body>
